@@ -43,6 +43,9 @@ LOOKBACKS = [45, 60, 75, 90, 110]       # candidate channel lengths (trading day
 MIN_R2 = 0.55                           # channel fit quality
 MIN_TREND_GAIN = 0.08                   # regression rise over the window
 MAX_CHANNEL_POS = 0.35                  # lower third of the channel
+MIN_CHANNEL_POS_CAND = -0.15            # slightly below the floor still shown as candidate
+MIN_CHANNEL_POS_STRICT = -0.05          # strict picks must be essentially inside the channel
+EARNINGS_MIN_DAYS = 6                   # strict picks must not have earnings within N days
 MAX_RSI_CAND = 47.0
 MAX_RSI_PICK = 45.0
 MAX_PICKS = 6
@@ -197,7 +200,9 @@ def best_channel(close: pd.Series):
         if width <= 0 or width / y[-1] < 0.02:
             continue
         pos = (resid[-1] - lower_off) / width
-        score = r2 + min(gain, 0.5)  # prefer tight fit + healthy slope
+        wp = width / y[-1]
+        # prefer tight fit; penalize very wide channels (not tradeable short-term)
+        score = r2 + min(gain, 0.2) - max(0.0, wp - 0.15) * 1.5
         cand = {
             "lookback": lb, "slope": slope, "r2": round(r2, 3),
             "gain": round(gain, 4), "width_pct": round(width / y[-1], 4),
@@ -300,16 +305,13 @@ def analyze(ticker, df, meta):
         return None
 
     # gate: pullback inside an intact rising channel
-    if ch["pos"] > MAX_CHANNEL_POS:
+    if ch["pos"] > MAX_CHANNEL_POS or ch["pos"] < MIN_CHANNEL_POS_CAND:
         return None
     if rsi > MAX_RSI_CAND:
         return None
     if price >= sma20:
         return None
     if sma200 is not None and price < sma200:
-        return None
-    # channel floor not broken
-    if price < ch["lower_now"] - 0.75 * atr:
         return None
 
     tail = close.tail(252)
@@ -325,7 +327,10 @@ def analyze(ticker, df, meta):
     tp_pct = tp_price / price - 1
     if tp_pct < 0.04:
         return None
-    tp_pct = min(tp_pct, 0.25)
+    # cap TP by volatility: short-term swing target, not the full 110-day channel width
+    tp_cap = max(0.05, min(0.15, 3.5 * atr_pct))
+    tp_pct = min(tp_pct, tp_cap)
+    tp_price = price * (1 + tp_pct)
 
     # --- SL: volatility-scaled
     k = 1.7 if atr_pct > 0.05 else 1.2
@@ -339,12 +344,14 @@ def analyze(ticker, df, meta):
 
     rr = tp_pct / sl_pct if sl_pct > 0 else 0
 
-    strict = (rsi <= MAX_RSI_PICK) and (price < sma50)
+    strict = (rsi <= MAX_RSI_PICK) and (price < sma50) and (ch["pos"] >= MIN_CHANNEL_POS_STRICT)
+    pos_quality = 1.0 - min(1.0, abs(ch["pos"] - 0.12) / 0.5)   # best: just above the floor
     score = (
-        (MAX_RSI_CAND - rsi) * 1.5          # more oversold = better entry
+        (MAX_RSI_CAND - rsi) * 1.0          # oversold helps...
+        + pos_quality * 12                   # ...but inside the channel matters more
         + ch["r2"] * 20                      # channel quality
         + min(rr, 4) * 6                     # risk/reward
-        + (8 if strict else 0)
+        + (10 if strict else 0)
     )
 
     return {
@@ -508,6 +515,13 @@ def main():
             if extra["earnings_date"]:
                 earnings_map[t] = extra["earnings_date"]
             time.sleep(0.4)
+
+    # earnings too close -> not a channel trade, it's an earnings bet
+    for c in candidates:
+        d = c.get("days_to_earnings")
+        if d is not None and 0 <= d < EARNINGS_MIN_DAYS:
+            c["strict"] = False
+            c["earnings_soon"] = True
 
     picks = [c for c in candidates if c["strict"]][:MAX_PICKS]
     if len(picks) < 3:
