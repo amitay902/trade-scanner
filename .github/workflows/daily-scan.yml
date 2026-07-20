@@ -1,0 +1,43 @@
+name: Daily channel-up scan
+
+on:
+  schedule:
+    # 12:45 UTC = 15:45 שעון ישראל בקיץ (14:45 בחורף) — לפני פתיחת וול סטריט
+    - cron: '45 12 * * 1-5'
+  workflow_dispatch: {}   # הרצה ידנית מהלשונית Actions
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install yfinance pandas numpy requests lxml
+
+      - name: Run scanner
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC || 'taalot-6171cac70f4d' }}
+          APP_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
+        run: python scan.py
+
+      - name: Commit results
+        run: |
+          git config user.name "scanner-bot"
+          git config user.email "actions@github.com"
+          git add -A
+          git diff --cached --quiet || git commit -m "scan: $(date -u +%F)"
+          git pull --rebase origin ${{ github.ref_name }} || true
+          git push
