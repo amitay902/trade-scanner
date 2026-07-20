@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>סורק תעלות — איתותים יומיים</title>
+<meta name="description" content="סריקה יומית של מניות בתעלה עולה עם נקודות כניסה, יעדי רווח וסטופים">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#0d0d0d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+:root{
+  color-scheme: dark;
+  --page:#0d0d0d; --surface:#1a1a19; --surface-2:#232322;
+  --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+  --grid:#2c2c2a; --baseline:#383835; --border:rgba(255,255,255,.10);
+  --accent:#3987e5; --accent-soft:rgba(57,135,229,.14);
+  --good:#0ca30c; --warning:#fab219; --serious:#ec835a; --critical:#d03b3b;
+  --up:#0ca30c; --down:#e66767; --divergent-neg:#e66767;
+  --shadow:0 8px 28px rgba(0,0,0,.45);
+}
+:root[data-theme="light"]{
+  color-scheme: light;
+  --page:#f9f9f7; --surface:#fcfcfb; --surface-2:#f0efec;
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --baseline:#c3c2b7; --border:rgba(11,11,11,.10);
+  --accent:#2a78d6; --accent-soft:rgba(42,120,214,.10);
+  --up:#006300; --down:#d03b3b; --divergent-neg:#d03b3b;
+  --shadow:0 6px 20px rgba(11,11,11,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+  background:var(--page); color:var(--ink);
+  min-height:100vh; padding-bottom:calc(76px + env(safe-area-inset-bottom));
+}
+button{font-family:inherit}
+.num{font-variant-numeric:tabular-nums}
+.ltrv{direction:ltr;unicode-bidi:isolate}
+.chartcard svg{direction:ltr}
+
+/* ---------- header ---------- */
+header{
+  position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--page) 88%,transparent);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--border);
+  padding:calc(10px + env(safe-area-inset-top)) 16px 10px;
+  display:flex;align-items:center;gap:10px;
+}
+.logo{width:34px;height:34px;border-radius:9px;flex:none}
+header h1{font-size:17px;font-weight:700;letter-spacing:-.2px}
+header .sub{font-size:11.5px;color:var(--muted);margin-top:1px}
+.hspace{flex:1}
+.iconbtn{
+  width:38px;height:38px;border-radius:11px;border:1px solid var(--border);
+  background:var(--surface);color:var(--ink-2);font-size:17px;cursor:pointer;
+  display:grid;place-items:center;transition:background .15s;
+}
+.iconbtn:active{background:var(--surface-2)}
+
+/* ---------- layout ---------- */
+main{max-width:760px;margin:0 auto;padding:14px 14px 20px}
+.view{display:none;animation:fadein .18s ease}
+.view.active{display:block}
+@keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+h2.section{font-size:13px;font-weight:600;color:var(--muted);margin:18px 2px 10px;letter-spacing:.3px}
+h2.section:first-child{margin-top:4px}
+
+/* ---------- cards ---------- */
+.card{
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:14px;margin-bottom:12px;box-shadow:var(--shadow);
+}
+.pickcard{border-inline-start:3px solid var(--accent)}
+.rowline{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tk{font-size:20px;font-weight:800;letter-spacing:.2px}
+.co{font-size:12.5px;color:var(--ink-2);flex:1;min-width:120px}
+.chip{
+  font-size:10.5px;padding:3px 8px;border-radius:999px;background:var(--surface-2);
+  color:var(--ink-2);border:1px solid var(--border);white-space:nowrap;
+}
+.chip.acc{background:var(--accent-soft);color:var(--accent);border-color:transparent;font-weight:700}
+.chip.warn{color:var(--warning)}
+.chip.crit{color:var(--critical);font-weight:700}
+.price{font-size:19px;font-weight:700}
+.badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.badge{
+  flex:1 1 auto;min-width:72px;background:var(--surface-2);border-radius:10px;
+  padding:7px 9px;text-align:center;border:1px solid var(--border);
+}
+.badge .k{font-size:9.5px;color:var(--muted);letter-spacing:.2px}
+.badge .v{font-size:13.5px;font-weight:700;margin-top:2px}
+.tp{color:var(--up)} .slc{color:var(--down)}
+
+/* target bar: SL ---- entry/price ---- TP */
+.tbar{margin-top:12px}
+.tbar .lbls{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);margin-bottom:4px}
+.track{position:relative;height:8px;border-radius:99px;background:var(--surface-2);overflow:visible}
+.track .fill{position:absolute;top:0;bottom:0;border-radius:99px;background:linear-gradient(to left,var(--down),var(--accent) 45%,var(--up))}
+.track .dot{
+  position:absolute;top:50%;width:14px;height:14px;border-radius:50%;
+  background:var(--ink);border:3px solid var(--accent);transform:translate(50%,-50%);
+  box-shadow:0 0 0 3px var(--surface);
+}
+.cardbtns{display:flex;gap:8px;margin-top:12px}
+.btn{
+  flex:1;padding:10px 12px;border-radius:11px;border:1px solid var(--border);
+  background:var(--surface-2);color:var(--ink);font-size:13.5px;font-weight:600;cursor:pointer;
+  transition:filter .15s;
+}
+.btn:active{filter:brightness(1.15)}
+.btn.primary{background:var(--accent);border-color:transparent;color:#fff}
+.btn.danger{background:transparent;border-color:var(--critical);color:var(--critical)}
+.btn.small{flex:none;padding:7px 12px;font-size:12px}
+.spark{margin-top:10px;width:100%;height:44px;display:block}
+
+/* alerts */
+.alert{
+  display:flex;gap:10px;align-items:flex-start;background:var(--surface);
+  border:1px solid var(--border);border-inline-start:3px solid var(--warning);
+  border-radius:13px;padding:11px 12px;margin-bottom:8px;font-size:13px;color:var(--ink-2);
+}
+.alert.crit{border-inline-start-color:var(--critical)}
+.alert.good{border-inline-start-color:var(--good)}
+.alert b{color:var(--ink)}
+
+/* positions */
+.pnl-pos{color:var(--up);font-weight:800}
+.pnl-neg{color:var(--down);font-weight:800}
+.kv{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-2);padding:3px 0}
+.kv b{color:var(--ink);font-weight:600}
+
+/* stats */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:8px;margin-bottom:14px}
+.tile{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 10px;text-align:center}
+.tile .v{font-size:21px;font-weight:800;letter-spacing:-.3px}
+.tile .k{font-size:10.5px;color:var(--muted);margin-top:3px}
+.filters{display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;padding-bottom:2px}
+.fbtn{
+  padding:7px 14px;border-radius:999px;border:1px solid var(--border);background:var(--surface);
+  color:var(--ink-2);font-size:12px;cursor:pointer;white-space:nowrap;
+}
+.fbtn.on{background:var(--accent-soft);color:var(--accent);border-color:transparent;font-weight:700}
+.chartcard{position:relative}
+.chartcard h3{font-size:13px;font-weight:600;margin-bottom:2px}
+.chartcard .csub{font-size:11px;color:var(--muted);margin-bottom:8px}
+.viz-tip{
+  position:fixed;z-index:60;pointer-events:none;background:var(--surface-2);color:var(--ink);
+  border:1px solid var(--border);border-radius:9px;padding:6px 9px;font-size:11.5px;
+  box-shadow:var(--shadow);display:none;white-space:nowrap;
+}
+
+/* nav */
+nav{
+  position:fixed;bottom:0;inset-inline:0;z-index:40;
+  background:color-mix(in srgb,var(--page) 90%,transparent);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-top:1px solid var(--border);
+  display:flex;justify-content:space-around;
+  padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+}
+nav button{
+  flex:1;max-width:120px;background:none;border:none;color:var(--muted);cursor:pointer;
+  font-size:10.5px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:5px 0;
+  border-radius:12px;position:relative;
+}
+nav button .ic{font-size:19px;line-height:1}
+nav button.on{color:var(--accent);font-weight:700}
+nav .bdg{
+  position:absolute;top:0;inset-inline-end:calc(50% - 20px);
+  background:var(--critical);color:#fff;font-size:9px;font-weight:800;
+  min-width:15px;height:15px;border-radius:99px;display:grid;place-items:center;padding:0 3px;
+}
+
+/* modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:50;display:none;align-items:flex-end;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{
+  background:var(--page);border:1px solid var(--border);border-radius:22px 22px 0 0;
+  width:100%;max-width:560px;max-height:88vh;overflow-y:auto;
+  padding:18px 18px calc(20px + env(safe-area-inset-bottom));
+  animation:slideup .22s ease;
+}
+@keyframes slideup{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
+.modal h3{font-size:16px;margin-bottom:14px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:5px}
+.field input,.field select,.field textarea{
+  width:100%;padding:11px 12px;border-radius:11px;border:1px solid var(--border);
+  background:var(--surface);color:var(--ink);font-size:14px;font-family:inherit;
+}
+.field input:focus,.field select:focus{outline:2px solid var(--accent);border-color:transparent}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hint{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5}
+.toast{
+  position:fixed;bottom:calc(86px + env(safe-area-inset-bottom));inset-inline:0;margin:auto;
+  width:fit-content;max-width:85%;background:var(--surface-2);color:var(--ink);z-index:70;
+  border:1px solid var(--border);border-radius:99px;padding:9px 18px;font-size:13px;
+  box-shadow:var(--shadow);opacity:0;transition:opacity .25s;pointer-events:none;
+}
+.toast.show{opacity:1}
+.empty{
+  text-align:center;color:var(--muted);padding:40px 16px;font-size:13.5px;line-height:1.8;
+}
+.empty .big{font-size:34px;margin-bottom:8px}
+table.trades{width:100%;border-collapse:collapse;font-size:12px}
+table.trades th{color:var(--muted);font-weight:500;text-align:right;padding:6px 4px;border-bottom:1px solid var(--grid);font-size:10.5px}
+table.trades td{padding:8px 4px;border-bottom:1px solid var(--grid)}
+.linkish{color:var(--accent);cursor:pointer;text-decoration:none}
+.divider{height:1px;background:var(--grid);margin:16px 0}
+.fab{
+  position:fixed;bottom:calc(88px + env(safe-area-inset-bottom));inset-inline-end:18px;z-index:35;
+  width:52px;height:52px;border-radius:50%;background:var(--accent);color:#fff;border:none;
+  font-size:26px;cursor:pointer;box-shadow:var(--shadow);display:none;
+}
+.fab.show{display:block}
+@media(min-width:640px){
+  .badges .badge{min-width:86px}
+  .modal{border-radius:22px;align-self:center}
+  .modal-bg{align-items:center}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <img class="logo" src="icon-192.png" alt="">
+  <div>
+    <h1>סורק תעלות</h1>
+    <div class="sub" id="scanDate">טוען נתונים…</div>
+  </div>
+  <div class="hspace"></div>
+  <button class="iconbtn" id="themeBtn" title="מצב תצוגה">◐</button>
+  <button class="iconbtn" id="refreshBtn" title="רענון">↻</button>
+</header>
+
+<main>
+  <!-- ============ signals ============ -->
+  <section class="view active" id="view-signals">
+    <div id="alertsBox"></div>
+    <div id="picksBox"></div>
+    <div id="candsBox"></div>
+  </section>
+
+  <!-- ============ positions ============ -->
+  <section class="view" id="view-positions">
+    <div id="posAlertsBox"></div>
+    <div id="positionsBox"></div>
+  </section>
+
+  <!-- ============ history ============ -->
+  <section class="view" id="view-history">
+    <div id="historyBox"></div>
+  </section>
+
+  <!-- ============ stats ============ -->
+  <section class="view" id="view-stats">
+    <div class="filters" id="statFilters"></div>
+    <div id="statsBox"></div>
+  </section>
+
+  <!-- ============ settings ============ -->
+  <section class="view" id="view-settings">
+    <div id="settingsBox"></div>
+  </section>
+</main>
+
+<button class="fab" id="fabAdd" title="הוספה ידנית">+</button>
+
+<nav>
+  <button data-view="signals" class="on"><span class="ic">📡</span>איתותים<span class="bdg" id="bdgSignals" style="display:none"></span></button>
+  <button data-view="positions"><span class="ic">💼</span>פוזיציות<span class="bdg" id="bdgPos" style="display:none"></span></button>
+  <button data-view="history"><span class="ic">🧾</span>היסטוריה</button>
+  <button data-view="stats"><span class="ic">📊</span>סטטיסטיקות</button>
+  <button data-view="settings"><span class="ic">⚙️</span>הגדרות</button>
+</nav>
+
+<div class="modal-bg" id="modalBg"><div class="modal" id="modalBody"></div></div>
+<div class="toast" id="toast"></div>
+<div class="viz-tip" id="vizTip"></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   Channel-Up Scanner PWA — client
+   ===================================================================== */
+
+const DEFAULT_NTFY_TOPIC = 'taalot-6171cac70f4d';
+const NTFY_SERVER = 'https://ntfy.sh';
+const LS_KEY = 'cs_state_v2';
+const ALERT_PROX = 0.015;
+const EARN_DAYS = 5;
+
+/* ---------- fallback seed (works even with no server) ---------- */
+const FALLBACK = {"scan_date":"2026-07-20","generated_at":"2026-07-20T08:30:00+00:00","picks":["CW","IBRX","RBC"],"new_picks":[],"candidates":[],"quotes":{},"earnings":{},"alerts":[]};
+
+/* ---------- state ---------- */
+let picksData = null;
+let state = loadState();
+function loadState(){
+  try{
+    const s = JSON.parse(localStorage.getItem(LS_KEY));
+    if(s && s.positions) return s;
+  }catch(e){}
+  return {positions:[], settings:{ntfy_topic:DEFAULT_NTFY_TOPIC, theme:'auto', gh:null, seen_scan:null}, };
+}
+function saveState(){
+  localStorage.setItem(LS_KEY, JSON.stringify(state));
+  scheduleSync();
+}
+const $ = id => document.getElementById(id);
+const fmt = (n,d=2) => n==null?'—':Number(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+const pct = (n,d=1) => n==null?'—':(n>0?'+':'')+(100*n).toFixed(d)+'%';
+const esc = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const todayISO = () => new Date().toISOString().slice(0,10);
+const uid = () => Date.now().toString(36) + Math.floor(Math.random()*1e6).toString(36);
+
+function toast(msg){
+  const t=$('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+/* ---------- theme ---------- */
+function applyTheme(){
+  const t = state.settings.theme||'auto';
+  if(t==='auto') document.documentElement.removeAttribute('data-theme'),
+    document.documentElement.setAttribute('data-theme',
+      matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');
+  else document.documentElement.setAttribute('data-theme',t);
+}
+$('themeBtn').onclick=()=>{
+  const cur=document.documentElement.getAttribute('data-theme');
+  state.settings.theme = cur==='dark'?'light':'dark';
+  saveState(); applyTheme();
+};
+applyTheme();
+
+/* ---------- data loading ---------- */
+async function loadPicks(force){
+  try{
+    const r = await fetch('picks.json?ts='+(force?Date.now():Math.floor(Date.now()/3e5)), {cache:'no-cache'});
+    if(!r.ok) throw 0;
+    picksData = await r.json();
+  }catch(e){ picksData = picksData || FALLBACK; }
+  // merge quotes for held tickers
+  $('scanDate').textContent = 'סריקה אחרונה: ' + (picksData.scan_date||'—') +
+      ' · ' + (picksData.candidates?.length||0) + ' מועמדות';
+  renderAll();
+}
+$('refreshBtn').onclick=()=>{ loadPicks(true); syncPull(); toast('מרענן…'); };
+
+/* ---------- quotes helper ---------- */
+function quoteFor(t){
+  return picksData?.quotes?.[t]?.price ?? null;
+}
+function curPrice(p){
+  // manual price override wins if newer than scan
+  if(p.manual_price && (!picksData || (p.manual_price_date||'') >= (picksData.scan_date||''))) return p.manual_price;
+  return quoteFor(p.ticker) ?? p.manual_price ?? p.entry_price;
+}
+
+/* ---------- alerts ---------- */
+function clientAlerts(){
+  const out=[];
+  const today = new Date(todayISO());
+  for(const p of state.positions.filter(p=>p.status==='open')){
+    const price = curPrice(p);
+    if(!price) continue;
+    const chg = p.entry_price? price/p.entry_price-1 : 0;
+    if(p.tp_price){
+      if(price>=p.tp_price) out.push({sev:'good',msg:`<b>${p.ticker}</b> הגיעה ליעד הרווח — ${fmt(price)}$ (יעד ${fmt(p.tp_price)}$, ${pct(chg)}) 🎉 שקול לממש`});
+      else if((p.tp_price-price)/price<=ALERT_PROX) out.push({sev:'good',msg:`<b>${p.ticker}</b> מתקרבת ליעד: ${fmt(price)}$ מול ${fmt(p.tp_price)}$ (${pct(chg)})`});
+    }
+    if(p.sl_price){
+      if(price<=p.sl_price) out.push({sev:'crit',msg:`<b>${p.ticker}</b> מתחת לסטופ! ${fmt(price)}$ (סטופ ${fmt(p.sl_price)}$, ${pct(chg)})`});
+      else if((price-p.sl_price)/price<=ALERT_PROX) out.push({sev:'crit',msg:`<b>${p.ticker}</b> מתקרבת לסטופ: ${fmt(price)}$ מול ${fmt(p.sl_price)}$ (${pct(chg)})`});
+    }
+    const ed = p.earnings_date || picksData?.earnings?.[p.ticker];
+    if(ed){
+      const days = Math.round((new Date(ed)-today)/864e5);
+      if(days>=0 && days<=EARN_DAYS) out.push({sev:'warn',msg:`<b>${p.ticker}</b>: דוחות ${days===0?'היום':'בעוד '+days+' ימים'} (${ed}) — החלט אם להישאר`});
+    }
+  }
+  return out;
+}
+
+/* ---------- render: signals ---------- */
+function sparkSVG(vals, w=600, h=44){
+  if(!vals || vals.length<2) return '';
+  const min=Math.min(...vals), max=Math.max(...vals), rng=(max-min)||1;
+  const pts = vals.map((v,i)=>[(i/(vals.length-1))*w, h-3-((v-min)/rng)*(h-6)]);
+  const d = pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join('');
+  const up = vals[vals.length-1]>=vals[0];
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">
+    <path d="${d}" fill="none" stroke="${up?'var(--accent)':'var(--down)'}" stroke-width="2" stroke-linejoin="round"/>
+  </svg>`;
+}
+
+function candCard(c){
+  const held = state.positions.some(p=>p.ticker===c.ticker && p.status==='open');
+  const earn = c.earnings_date ?
+    `<span class="chip ${c.days_to_earnings!=null&&c.days_to_earnings<=7?'warn':''}">📅 דוחות ${c.earnings_date}${c.days_to_earnings!=null?' ('+c.days_to_earnings+' ימים)':''}</span>`:'';
+  return `<div class="card ${c.is_pick?'pickcard':''}" >
+    <div class="rowline">
+      <span class="tk">${esc(c.ticker)}</span>
+      <span class="co">${esc(c.name)}</span>
+      <span class="price num">$${fmt(c.price)}</span>
+    </div>
+    <div class="rowline" style="margin-top:7px">
+      ${c.is_pick?'<span class="chip acc">🎯 איתות</span>':''}
+      <span class="chip">${esc(c.sector)}</span>
+      ${earn}
+      ${c.target_mean?`<span class="chip">יעד אנליסטים $${fmt(c.target_mean,0)}</span>`:''}
+    </div>
+    ${c.spark?sparkSVG(c.spark):''}
+    <div class="badges num">
+      <div class="badge"><div class="k">RSI</div><div class="v ltrv">${fmt(c.rsi,1)}</div></div>
+      <div class="badge"><div class="k">מול SMA20</div><div class="v ltrv">${pct(c.sma20_dist)}</div></div>
+      <div class="badge"><div class="k">מול SMA50</div><div class="v ltrv">${pct(c.sma50_dist)}</div></div>
+      <div class="badge"><div class="k">תנודתיות יומית</div><div class="v ltrv">${pct(c.atr_pct)}</div></div>
+      <div class="badge"><div class="k">מיקום בתעלה</div><div class="v ltrv">${c.channel?Math.round(c.channel.pos*100)+'%':'—'}</div></div>
+    </div>
+    <div class="badges num">
+      <div class="badge"><div class="k">יעד רווח</div><div class="v tp ltrv">$${fmt(c.tp_price)} · ${pct(c.tp_pct)}</div></div>
+      <div class="badge"><div class="k">סטופ</div><div class="v slc ltrv">$${fmt(c.sl_price)} · ${pct(-c.sl_pct)}</div></div>
+      <div class="badge"><div class="k">סיכוי/סיכון</div><div class="v ltrv">${fmt(c.rr,1)}</div></div>
+    </div>
+    <div class="cardbtns">
+      <button class="btn primary" onclick="openEntry('${esc(c.ticker)}')" ${held?'disabled style="opacity:.5"':''}>${held?'כבר בפוזיציה':'נכנסתי לעסקה'}</button>
+    </div>
+  </div>`;
+}
+
+function renderSignals(){
+  const alerts=[...(picksData?.alerts||[]).map(a=>({sev:a.type?.startsWith('sl')?'crit':a.type==='earnings'?'warn':'good',msg:esc(a.msg)})), ...clientAlerts()];
+  $('alertsBox').innerHTML = alerts.length?
+    `<h2 class="section">התראות</h2>`+alerts.map(a=>`<div class="alert ${a.sev}"><span>${a.sev==='crit'?'⚠️':a.sev==='warn'?'📅':'🔔'}</span><span>${a.msg}</span></div>`).join(''):'';
+  const cands = picksData?.candidates||[];
+  const picks = cands.filter(c=>c.is_pick);
+  const rest = cands.filter(c=>!c.is_pick);
+  $('picksBox').innerHTML = picks.length?
+    `<h2 class="section">האיתותים של היום — תחתית תעלה עולה</h2>`+picks.map(candCard).join(''):
+    `<div class="empty"><div class="big">🔍</div>אין איתותים חדשים כרגע.<br>הסריקה רצה כל יום מסחר לפני פתיחת וול סטריט.</div>`;
+  $('candsBox').innerHTML = rest.length?
+    `<h2 class="section">מועמדות נוספות (לא עברו את כל התנאים המחמירים)</h2>`+rest.map(candCard).join(''):'';
+  const nb=$('bdgSignals');
+  const newN=(picksData?.new_picks||[]).length;
+  if(newN && state.settings.seen_scan!==picksData.scan_date){nb.style.display='grid';nb.textContent=newN;}
+  else nb.style.display='none';
+}
+
+/* ---------- entry / manual add ---------- */
+window.openEntry = function(ticker){
+  const c = (picksData?.candidates||[]).find(x=>x.ticker===ticker) || {};
+  openModal(`
+    <h3>כניסה לעסקה — ${esc(ticker)}</h3>
+    <div class="grid2">
+      <div class="field"><label>מחיר כניסה ($)</label><input id="f_entry" type="number" step="any" value="${c.price??''}"></div>
+      <div class="field"><label>כמות מניות</label><input id="f_qty" type="number" step="any" value="1"></div>
+      <div class="field"><label>תאריך</label><input id="f_date" type="date" value="${todayISO()}"></div>
+      <div class="field"><label>דוחות קרובים</label><input id="f_earn" type="date" value="${c.earnings_date??''}"></div>
+      <div class="field"><label>יעד רווח ($)</label><input id="f_tp" type="number" step="any" value="${c.tp_price??''}"></div>
+      <div class="field"><label>סטופ ($)</label><input id="f_sl" type="number" step="any" value="${c.sl_price??''}"></div>
+    </div>
+    <div class="field"><label>הערות</label><textarea id="f_notes" rows="2"></textarea></div>
+    <div class="cardbtns">
+      <button class="btn" onclick="closeModal()">ביטול</button>
+      <button class="btn primary" onclick="saveEntry('${esc(ticker)}')">שמור פוזיציה</button>
+    </div>`);
+};
+window.saveEntry = function(ticker){
+  const c = (picksData?.candidates||[]).find(x=>x.ticker===ticker) || {};
+  const entry = parseFloat($('f_entry').value);
+  if(!entry){toast('חסר מחיר כניסה');return;}
+  state.positions.push({
+    id:uid(), ticker, name:c.name||ticker, sector:c.sector||'',
+    entry_date:$('f_date').value||todayISO(), entry_price:entry,
+    qty:parseFloat($('f_qty').value)||1,
+    tp_price:parseFloat($('f_tp').value)||null, sl_price:parseFloat($('f_sl').value)||null,
+    earnings_date:$('f_earn').value||null, notes:$('f_notes').value||'',
+    status:'open', updated:Date.now(),
+  });
+  saveState(); closeModal(); renderAll(); toast('הפוזיציה נשמרה 💼');
+};
+$('fabAdd').onclick=()=>{
+  openModal(`
+    <h3>הוספת פוזיציה ידנית</h3>
+    <div class="field"><label>סימבול (Ticker)</label><input id="f_tk" style="text-transform:uppercase" placeholder="AAPL"></div>
+    <div class="grid2">
+      <div class="field"><label>מחיר כניסה ($)</label><input id="f_entry" type="number" step="any"></div>
+      <div class="field"><label>כמות</label><input id="f_qty" type="number" step="any" value="1"></div>
+      <div class="field"><label>תאריך</label><input id="f_date" type="date" value="${todayISO()}"></div>
+      <div class="field"><label>דוחות קרובים</label><input id="f_earn" type="date"></div>
+      <div class="field"><label>יעד רווח ($)</label><input id="f_tp" type="number" step="any"></div>
+      <div class="field"><label>סטופ ($)</label><input id="f_sl" type="number" step="any"></div>
+    </div>
+    <div class="cardbtns">
+      <button class="btn" onclick="closeModal()">ביטול</button>
+      <button class="btn primary" onclick="saveManual()">שמור</button>
+    </div>`);
+};
+window.saveManual=function(){
+  const tk=($('f_tk').value||'').trim().toUpperCase();
+  const entry=parseFloat($('f_entry').value);
+  if(!tk||!entry){toast('חסר סימבול או מחיר');return;}
+  state.positions.push({
+    id:uid(), ticker:tk, name:tk, sector:'', entry_date:$('f_date').value||todayISO(),
+    entry_price:entry, qty:parseFloat($('f_qty').value)||1,
+    tp_price:parseFloat($('f_tp').value)||null, sl_price:parseFloat($('f_sl').value)||null,
+    earnings_date:$('f_earn').value||null, notes:'', status:'open', updated:Date.now(),
+  });
+  saveState(); closeModal(); renderAll(); toast('נוסף 💼');
+};
+
+/* ---------- render: positions ---------- */
+function posCard(p){
+  const price = curPrice(p);
+  const chg = p.entry_price? price/p.entry_price-1 : 0;
+  const val = (price-p.entry_price)*(p.qty||1);
+  // position of price between SL and TP
+  let lo=p.sl_price??p.entry_price*0.9, hi=p.tp_price??p.entry_price*1.1;
+  let frac = Math.min(1,Math.max(0,(price-lo)/(hi-lo||1)));
+  const ed = p.earnings_date || picksData?.earnings?.[p.ticker];
+  const days = ed? Math.round((new Date(ed)-new Date(todayISO()))/864e5):null;
+  return `<div class="card">
+    <div class="rowline">
+      <span class="tk">${esc(p.ticker)}</span>
+      <span class="co">${esc(p.name||'')}</span>
+      <span class="${chg>=0?'pnl-pos':'pnl-neg'} num ltrv" style="font-size:18px">${pct(chg)}</span>
+    </div>
+    <div class="rowline" style="margin-top:6px">
+      ${ed?`<span class="chip ${days!=null&&days<=EARN_DAYS?'crit':days!=null&&days<=10?'warn':''}">📅 דוחות ${ed}${days!=null?' · '+(days===0?'היום!':days+' ימים')  :''}</span>`:''}
+      <span class="chip num">כמות ${fmt(p.qty,0)}</span>
+      <span class="chip num">${p.entry_date}</span>
+    </div>
+    <div class="kv num"><span>כניסה</span><b>$${fmt(p.entry_price)}</b></div>
+    <div class="kv num"><span>מחיר נוכחי ${p.manual_price?'(ידני)':''}</span><b>$${fmt(price)} <span class="linkish" onclick="editPrice('${p.id}')">עדכן</span></b></div>
+    <div class="kv num"><span>רווח/הפסד</span><b class="${val>=0?'pnl-pos':'pnl-neg'} ltrv">${val<0?'-':''}$${fmt(Math.abs(val))}</b></div>
+    <div class="tbar num">
+      <div class="lbls"><span class="slc">סטופ $${fmt(p.sl_price)}</span><span class="tp">יעד $${fmt(p.tp_price)}</span></div>
+      <div class="track"><div class="fill" style="inset-inline-start:0;width:100%"></div>
+        <div class="dot" style="inset-inline-start:${(frac*100).toFixed(1)}%"></div></div>
+    </div>
+    <div class="cardbtns">
+      <button class="btn" onclick="openEdit('${p.id}')">עריכה</button>
+      <button class="btn primary" onclick="openSell('${p.id}')">מכרתי ✔</button>
+    </div>
+  </div>`;
+}
+function renderPositions(){
+  const open = state.positions.filter(p=>p.status==='open');
+  const alerts = clientAlerts();
+  $('posAlertsBox').innerHTML = alerts.map(a=>`<div class="alert ${a.sev}"><span>${a.sev==='crit'?'⚠️':a.sev==='warn'?'📅':'🔔'}</span><span>${a.msg}</span></div>`).join('');
+  $('positionsBox').innerHTML = open.length? open.map(posCard).join(''):
+    `<div class="empty"><div class="big">💼</div>אין פוזיציות פתוחות.<br>סמן "נכנסתי לעסקה" על איתות, או הוסף ידנית עם +.</div>`;
+  const b=$('bdgPos'); const n=alerts.length;
+  if(n){b.style.display='grid';b.textContent=n;} else b.style.display='none';
+}
+window.editPrice=function(id){
+  const p=state.positions.find(x=>x.id===id); if(!p)return;
+  openModal(`
+    <h3>עדכון מחיר — ${esc(p.ticker)}</h3>
+    <div class="field"><label>מחיר נוכחי ($)</label><input id="f_mp" type="number" step="any" value="${curPrice(p)??''}"></div>
+    <div class="hint">המחיר מתעדכן אוטומטית בכל סריקה יומית. עדכון ידני שימושי באמצע יום המסחר.</div>
+    <div class="cardbtns">
+      <button class="btn" onclick="closeModal()">ביטול</button>
+      <button class="btn primary" onclick="savePrice('${id}')">עדכן</button>
+    </div>`);
+};
+window.savePrice=function(id){
+  const p=state.positions.find(x=>x.id===id); if(!p)return;
+  const v=parseFloat($('f_mp').value);
+  if(v){p.manual_price=v;p.manual_price_date=todayISO();p.updated=Date.now();saveState();}
+  closeModal(); renderAll();
+};
+window.openEdit=function(id){
+  const p=state.positions.find(x=>x.id===id); if(!p)return;
+  openModal(`
+    <h3>עריכת פוזיציה — ${esc(p.ticker)}</h3>
+    <div class="grid2">
+      <div class="field"><label>מחיר כניסה ($)</label><input id="f_entry" type="number" step="any" value="${p.entry_price}"></div>
+      <div class="field"><label>כמות</label><input id="f_qty" type="number" step="any" value="${p.qty}"></div>
+      <div class="field"><label>יעד רווח ($)</label><input id="f_tp" type="number" step="any" value="${p.tp_price??''}"></div>
+      <div class="field"><label>סטופ ($)</label><input id="f_sl" type="number" step="any" value="${p.sl_price??''}"></div>
+      <div class="field"><label>תאריך כניסה</label><input id="f_date" type="date" value="${p.entry_date}"></div>
+      <div class="field"><label>דוחות</label><input id="f_earn" type="date" value="${p.earnings_date??''}"></div>
+    </div>
+    <div class="field"><label>הערות</label><textarea id="f_notes" rows="2">${esc(p.notes||'')}</textarea></div>
+    <div class="cardbtns">
+      <button class="btn danger" onclick="delPos('${id}')">מחיקה</button>
+      <button class="btn" onclick="closeModal()">ביטול</button>
+      <button class="btn primary" onclick="saveEdit('${id}')">שמור</button>
+    </div>`);
+};
+window.saveEdit=function(id){
+  const p=state.positions.find(x=>x.id===id); if(!p)return;
+  p.entry_price=parseFloat($('f_entry').value)||p.entry_price;
+  p.qty=parseFloat($('f_qty').value)||p.qty;
+  p.tp_price=parseFloat($('f_tp').value)||null;
+  p.sl_price=parseFloat($('f_sl').value)||null;
+  p.entry_date=$('f_date').value||p.entry_date;
+  p.earnings_date=$('f_earn').value||null;
+  p.notes=$('f_notes').value;
+  p.updated=Date.now();
+  saveState(); closeModal(); renderAll(); toast('עודכן');
+};
+window.delPos=function(id){
+  if(!confirm('למחוק את הפוזיציה לגמרי?'))return;
+  state.positions=state.positions.filter(x=>x.id!==id);
+  saveState(); closeModal(); renderAll();
+};
+
+/* ---------- sell ---------- */
+window.openSell=function(id){
+  const p=state.positions.find(x=>x.id===id); if(!p)return;
+  openModal(`
+    <h3>מכירה — ${esc(p.ticker)}</h3>
+    <div class="grid2">
+      <div class="field"><label>מחיר מכירה ($)</label><input id="f_exit" type="number" step="any" value="${curPrice(p)??''}"></div>
+      <div class="field"><label>תאריך</label><input id="f_xdate" type="date" value="${todayISO()}"></div>
+    </div>
+    <div class="field"><label>סיבת יציאה</label>
+      <select id="f_reason">
+        <option value="tp">🎯 הגעה ליעד רווח</option>
+        <option value="sl">🛑 סטופ לוס</option>
+        <option value="earnings">📅 יציאה לפני דוחות</option>
+        <option value="manual" selected>✋ החלטה ידנית</option>
+        <option value="other">אחר</option>
+      </select></div>
+    <div class="field"><label>הערות</label><textarea id="f_xnotes" rows="2"></textarea></div>
+    <div class="cardbtns">
+      <button class="btn" onclick="closeModal()">ביטול</button>
+      <button class="btn primary" onclick="saveSell('${id}')">רישום מכירה</button>
+    </div>`);
+};
+window.saveSell=function(id){
+  const p=state.positions.find(x=>x.id===id); if(!p)return;
+  const x=parseFloat($('f_exit').value);
+  if(!x){toast('חסר מחיר מכירה');return;}
+  p.exit_price=x; p.exit_date=$('f_xdate').value||todayISO();
+  p.exit_reason=$('f_reason').value; p.exit_notes=$('f_xnotes').value;
+  p.status='closed'; p.updated=Date.now();
+  saveState(); closeModal(); renderAll();
+  const r = x/p.entry_price-1;
+  toast(r>=0?`נסגר ברווח של ${pct(r)} 🎉`:`נסגר בהפסד של ${pct(r)}`);
+};
+
+/* ---------- history ---------- */
+const REASONS={tp:'🎯 יעד',sl:'🛑 סטופ',earnings:'📅 דוחות',manual:'✋ ידני',other:'אחר'};
+function renderHistory(){
+  const closed = state.positions.filter(p=>p.status==='closed')
+    .sort((a,b)=>(b.exit_date||'').localeCompare(a.exit_date||''));
+  if(!closed.length){
+    $('historyBox').innerHTML=`<div class="empty"><div class="big">🧾</div>עוד אין עסקאות סגורות.<br>אחרי שתמכור — הכול יירשם כאן.</div>`;
+    return;
+  }
+  $('historyBox').innerHTML = `<div class="card" style="overflow-x:auto"><table class="trades num">
+    <thead><tr><th>מניה</th><th>כניסה</th><th>יציאה</th><th>תשואה</th><th>$</th><th>סיבה</th><th>ימים</th><th></th></tr></thead>
+    <tbody>${closed.map(p=>{
+      const r=p.exit_price/p.entry_price-1;
+      const d=Math.max(0,Math.round((new Date(p.exit_date)-new Date(p.entry_date))/864e5));
+      const dollars=(p.exit_price-p.entry_price)*(p.qty||1);
+      return `<tr>
+        <td><b>${esc(p.ticker)}</b><br><span style="color:var(--muted);font-size:10px">${p.entry_date}</span></td>
+        <td class="ltrv">$${fmt(p.entry_price)}</td><td class="ltrv">$${fmt(p.exit_price)}</td>
+        <td class="${r>=0?'pnl-pos':'pnl-neg'} ltrv">${pct(r)}</td>
+        <td class="${dollars>=0?'pnl-pos':'pnl-neg'} ltrv">${dollars<0?'-':''}$${fmt(Math.abs(dollars),0)}</td>
+        <td style="font-size:10.5px">${REASONS[p.exit_reason]||p.exit_reason||''}</td>
+        <td>${d}</td>
+        <td><span class="linkish" onclick="reopenTrade('${p.id}')">↩</span></td>
+      </tr>`;}).join('')}</tbody></table></div>
+    <div class="hint" style="margin-top:6px">↩ מחזיר עסקה לפוזיציות הפתוחות (אם נרשמה בטעות)</div>`;
+}
+window.reopenTrade=function(id){
+  const p=state.positions.find(x=>x.id===id); if(!p)return;
+  if(!confirm('להחזיר את העסקה למצב פתוח?'))return;
+  p.status='open'; delete p.exit_price; delete p.exit_date; delete p.exit_reason;
+  p.updated=Date.now(); saveState(); renderAll();
+};
+
+/* ---------- stats ---------- */
+let statPeriod='all';
+const PERIODS={all:'הכול','3m':'3 חודשים','6m':'6 חודשים','12m':'שנה'};
+function renderStatFilters(){
+  $('statFilters').innerHTML = Object.entries(PERIODS).map(([k,v])=>
+    `<button class="fbtn ${statPeriod===k?'on':''}" onclick="setPeriod('${k}')">${v}</button>`).join('');
+}
+window.setPeriod=function(k){statPeriod=k;renderStats();};
+
+function filteredClosed(){
+  let closed = state.positions.filter(p=>p.status==='closed' && p.exit_date);
+  if(statPeriod!=='all'){
+    const m={'3m':3,'6m':6,'12m':12}[statPeriod];
+    const cut=new Date(); cut.setMonth(cut.getMonth()-m);
+    closed=closed.filter(p=>new Date(p.exit_date)>=cut);
+  }
+  return closed.sort((a,b)=>(a.exit_date||'').localeCompare(b.exit_date||''));
+}
+
+function renderStats(){
+  renderStatFilters();
+  const closed = filteredClosed();
+  if(!closed.length){
+    $('statsBox').innerHTML=`<div class="empty"><div class="big">📊</div>אין עדיין נתונים לתקופה הזו.<br>סגור עסקאות כדי לראות את ביצועי האסטרטגיה.</div>`;
+    return;
+  }
+  const rets = closed.map(p=>p.exit_price/p.entry_price-1);
+  const wins = rets.filter(r=>r>0), losses = rets.filter(r=>r<=0);
+  const winRate = wins.length/rets.length;
+  const avgWin = wins.length? wins.reduce((a,b)=>a+b,0)/wins.length:0;
+  const avgLoss = losses.length? losses.reduce((a,b)=>a+b,0)/losses.length:0;
+  const grossW = wins.reduce((a,b)=>a+b,0), grossL = Math.abs(losses.reduce((a,b)=>a+b,0));
+  const pf = grossL? grossW/grossL : Infinity;
+  const expectancy = rets.reduce((a,b)=>a+b,0)/rets.length;
+  const totDollar = closed.reduce((a,p)=>a+(p.exit_price-p.entry_price)*(p.qty||1),0);
+  const holdDays = closed.map(p=>Math.max(0,Math.round((new Date(p.exit_date)-new Date(p.entry_date))/864e5)));
+  const avgHold = holdDays.reduce((a,b)=>a+b,0)/holdDays.length;
+
+  // equity curve (cumulative sum of %)
+  let cum=0; const eq = closed.map(p=>{cum+=p.exit_price/p.entry_price-1;return {d:p.exit_date,v:cum,t:p.ticker};});
+  // monthly
+  const months={};
+  closed.forEach(p=>{const m=p.exit_date.slice(0,7);months[m]=(months[m]||0)+(p.exit_price/p.entry_price-1);});
+  // by reason
+  const byR={};
+  closed.forEach(p=>{const k=p.exit_reason||'other';(byR[k]=byR[k]||[]).push(p.exit_price/p.entry_price-1);});
+
+  $('statsBox').innerHTML = `
+  <div class="tiles num">
+    <div class="tile"><div class="v ltrv" style="color:${winRate>=0.5?'var(--up)':'var(--down)'}">${(100*winRate).toFixed(0)}%</div><div class="k">אחוז הצלחה (${wins.length}/${rets.length})</div></div>
+    <div class="tile"><div class="v ltrv ${expectancy>=0?'pnl-pos':'pnl-neg'}">${pct(expectancy)}</div><div class="k">תוחלת לעסקה</div></div>
+    <div class="tile"><div class="v ltrv ${totDollar>=0?'pnl-pos':'pnl-neg'}">${totDollar<0?'-':''}$${fmt(Math.abs(totDollar),0)}</div><div class="k">רווח/הפסד כולל</div></div>
+    <div class="tile"><div class="v ltrv">${pf===Infinity?'∞':fmt(pf,2)}</div><div class="k">Profit Factor</div></div>
+    <div class="tile"><div class="v ltrv pnl-pos">${pct(avgWin)}</div><div class="k">רווח ממוצע</div></div>
+    <div class="tile"><div class="v ltrv pnl-neg">${pct(avgLoss)}</div><div class="k">הפסד ממוצע</div></div>
+    <div class="tile"><div class="v">${fmt(avgHold,0)}</div><div class="k">ימי החזקה בממוצע</div></div>
+  </div>
+  <div class="card chartcard"><h3>עקומת תשואה מצטברת</h3><div class="csub">סכום אחוזי התשואה של עסקאות סגורות, לפי סדר סגירה</div><div id="chEquity"></div></div>
+  <div class="card chartcard"><h3>תשואה לפי חודש</h3><div class="csub">סכום אחוזי תשואה לפי חודש הסגירה</div><div id="chMonthly"></div></div>
+  <div class="card chartcard"><h3>לפי סיבת יציאה</h3><div class="csub">כמה עסקאות בכל סוג ומה התשואה הממוצעת שלהן</div><div id="chReasons"></div></div>`;
+  drawEquity($('chEquity'), eq);
+  drawMonthly($('chMonthly'), months);
+  drawReasons($('chReasons'), byR);
+}
+
+/* ---------- charts (hand-rolled SVG, dataviz spec) ---------- */
+const tip=$('vizTip');
+function showTip(html,x,y){
+  tip.innerHTML=html;tip.style.display='block';
+  const r=tip.getBoundingClientRect();
+  tip.style.left=Math.min(innerWidth-r.width-8,Math.max(8,x-r.width/2))+'px';
+  tip.style.top=(y-r.height-14<8? y+16 : y-r.height-14)+'px';
+}
+function hideTip(){tip.style.display='none';}
+
+function drawEquity(el, eq){
+  const W=el.clientWidth||600, H=200, P={t:14,r:12,b:26,l:44};
+  const pts=[{d:'',v:0,t:''},...eq];
+  const min=Math.min(0,...pts.map(p=>p.v)), max=Math.max(0.001,...pts.map(p=>p.v));
+  const X=i=>P.l+(i/(pts.length-1||1))*(W-P.l-P.r);
+  const Y=v=>P.t+(1-(v-min)/(max-min||1))*(H-P.t-P.b);
+  const ticks=niceTicks(min,max,4);
+  const d=pts.map((p,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(p.v).toFixed(1)).join('');
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;touch-action:pan-y">
+    ${ticks.map(t=>`<line x1="${P.l}" x2="${W-P.r}" y1="${Y(t)}" y2="${Y(t)}" stroke="var(--grid)" stroke-width="1"/>
+      <text x="${P.l-6}" y="${Y(t)+3.5}" text-anchor="end" font-size="10" fill="var(--muted)" class="num">${(100*t).toFixed(0)}%</text>`).join('')}
+    <line x1="${P.l}" x2="${W-P.r}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--baseline)" stroke-width="1"/>
+    <path d="${d}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>
+    <circle id="eqDot" r="4" fill="var(--accent)" stroke="var(--surface)" stroke-width="2" style="display:none"/>
+    <line id="eqXh" y1="${P.t}" y2="${H-P.b}" stroke="var(--baseline)" stroke-width="1" stroke-dasharray="3 3" style="display:none"/>
+    <rect x="${P.l}" y="${P.t}" width="${W-P.l-P.r}" height="${H-P.t-P.b}" fill="transparent" id="eqHit"/>
+  </svg>`;
+  const svg=el.querySelector('svg'), hit=el.querySelector('#eqHit'),
+        dot=el.querySelector('#eqDot'), xh=el.querySelector('#eqXh');
+  function onmove(ev){
+    const rect=svg.getBoundingClientRect();
+    const cx=(ev.touches?ev.touches[0].clientX:ev.clientX);
+    const sx=(cx-rect.left)*(W/rect.width);
+    let i=Math.round((sx-P.l)/((W-P.l-P.r)/(pts.length-1||1)));
+    i=Math.max(0,Math.min(pts.length-1,i));
+    const p=pts[i];
+    dot.style.display=xh.style.display='block';
+    dot.setAttribute('cx',X(i));dot.setAttribute('cy',Y(p.v));
+    xh.setAttribute('x1',X(i));xh.setAttribute('x2',X(i));
+    showTip(`${p.t?`<b>${p.t}</b> · ${p.d}<br>`:'התחלה<br>'}מצטבר: <b class="num">${pct(p.v)}</b>`,cx,(ev.touches?ev.touches[0].clientY:ev.clientY));
+  }
+  hit.addEventListener('mousemove',onmove);
+  hit.addEventListener('touchmove',onmove,{passive:true});
+  hit.addEventListener('mouseleave',()=>{hideTip();dot.style.display=xh.style.display='none';});
+  hit.addEventListener('touchend',()=>{hideTip();dot.style.display=xh.style.display='none';});
+}
+
+function drawMonthly(el, months){
+  const keys=Object.keys(months).sort();
+  const W=el.clientWidth||600, H=190, P={t:12,r:12,b:30,l:44};
+  const vals=keys.map(k=>months[k]);
+  const min=Math.min(0,...vals), max=Math.max(0.001,...vals);
+  const Y=v=>P.t+(1-(v-min)/(max-min||1))*(H-P.t-P.b);
+  const bw=Math.min(46,(W-P.l-P.r)/keys.length-2);
+  const X=i=>P.l+(i+0.5)*((W-P.l-P.r)/keys.length);
+  const ticks=niceTicks(min,max,4);
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block">
+    ${ticks.map(t=>`<line x1="${P.l}" x2="${W-P.r}" y1="${Y(t)}" y2="${Y(t)}" stroke="var(--grid)"/>
+      <text x="${P.l-6}" y="${Y(t)+3.5}" text-anchor="end" font-size="10" fill="var(--muted)" class="num">${(100*t).toFixed(0)}%</text>`).join('')}
+    <line x1="${P.l}" x2="${W-P.r}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--baseline)"/>
+    ${keys.map((k,i)=>{
+      const v=months[k], y0=Y(0), y1=Y(v);
+      const top=Math.min(y0,y1), h=Math.max(2,Math.abs(y0-y1));
+      return `<rect data-i="${i}" x="${(X(i)-bw/2).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}"
+        rx="4" fill="${v>=0?'var(--accent)':'var(--divergent-neg)'}"/>
+      <text x="${X(i)}" y="${H-10}" text-anchor="middle" font-size="9.5" fill="var(--muted)" class="num">${k.slice(2).replace('-','/')}</text>`;
+    }).join('')}
+  </svg>`;
+  el.querySelectorAll('rect[data-i]').forEach(r=>{
+    const k=keys[+r.dataset.i];
+    const on=ev=>{const e=ev.touches?ev.touches[0]:ev;showTip(`<b>${k}</b>: <span class="num">${pct(months[k])}</span>`,e.clientX,e.clientY);};
+    r.addEventListener('mousemove',on); r.addEventListener('touchstart',on,{passive:true});
+    r.addEventListener('mouseleave',hideTip); r.addEventListener('touchend',hideTip);
+  });
+}
+
+function drawReasons(el, byR){
+  const order=['tp','sl','earnings','manual','other'].filter(k=>byR[k]);
+  const W=el.clientWidth||600, rowH=34, PR=96, PL=56;   // labels on the right (RTL), bars grow leftward
+  const H=12+order.length*rowH;
+  const maxN=Math.max(...order.map(k=>byR[k].length));
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;direction:ltr">
+    ${order.map((k,i)=>{
+      const arr=byR[k], n=arr.length, avg=arr.reduce((a,b)=>a+b,0)/n;
+      const y=6+i*rowH, bw=Math.max(4,(n/maxN)*(W-PR-PL-40));
+      const x0=W-PR;   // bar start (right edge), grows left
+      return `<text x="${W-4}" y="${y+rowH/2+3}" text-anchor="end" font-size="11" fill="var(--ink-2)">${REASONS[k]}</text>
+        <rect data-k="${k}" x="${(x0-bw).toFixed(1)}" y="${y+7}" width="${bw.toFixed(1)}" height="${rowH-14}" rx="4" fill="var(--accent)"/>
+        <text x="${(x0-bw-8).toFixed(1)}" y="${y+rowH/2+3}" text-anchor="end" font-size="11" fill="var(--ink)" class="num" font-weight="700">${n}</text>
+        <text x="4" y="${y+rowH/2+3}" text-anchor="start" font-size="10.5" fill="${avg>=0?'var(--up)':'var(--down)'}" class="num">${pct(avg)}</text>`;
+    }).join('')}
+  </svg>`;
+  el.querySelectorAll('rect[data-k]').forEach(r=>{
+    const k=r.dataset.k, arr=byR[k];
+    const on=ev=>{const e=ev.touches?ev.touches[0]:ev;
+      showTip(`<b>${REASONS[k]}</b> · ${arr.length} עסקאות<br>ממוצע: <span class="num">${pct(arr.reduce((a,b)=>a+b,0)/arr.length)}</span>`,e.clientX,e.clientY);};
+    r.addEventListener('mousemove',on); r.addEventListener('mouseleave',hideTip);
+  });
+}
+
+function niceTicks(min,max,n){
+  const span=max-min||1, step=Math.pow(10,Math.floor(Math.log10(span/n)));
+  const err=span/n/step, mult=err>=7.5?10:err>=3?5:err>=1.5?2:1;
+  const s=step*mult, out=[];
+  for(let v=Math.ceil(min/s)*s; v<=max+1e-9; v+=s) out.push(v);
+  return out;
+}
+
+/* ---------- settings ---------- */
+function renderSettings(){
+  const s=state.settings, gh=s.gh||{};
+  $('settingsBox').innerHTML = `
+  <div class="card">
+    <h3 style="font-size:14px;margin-bottom:10px">🔔 התראות Push (ntfy)</h3>
+    <div class="hint" style="margin-bottom:10px">
+      ההתראות מגיעות דרך אפליקציית <b>ntfy</b> החינמית (בלי הרשמה):<br>
+      1. התקן את ntfy מחנות האפליקציות (iOS / Android).<br>
+      2. הוסף מנוי (Subscribe) לנושא שלמטה.<br>
+      3. זהו — כל סריקה עם איתותים או התראות תגיע לטלפון.
+    </div>
+    <div class="field"><label>נושא (Topic)</label><input id="s_topic" value="${esc(s.ntfy_topic||'')}" dir="ltr"></div>
+    <div class="cardbtns">
+      <button class="btn" onclick="saveTopic()">שמור</button>
+      <button class="btn primary" onclick="testNtfy()">שלח התראת בדיקה</button>
+    </div>
+    <div class="hint">שינית את הנושא? עדכן גם את הסוד NTFY_TOPIC בהגדרות ה-repo (ר׳ README).</div>
+  </div>
+  <div class="card">
+    <h3 style="font-size:14px;margin-bottom:10px">☁️ סנכרון לענן (GitHub)</h3>
+    <div class="hint" style="margin-bottom:10px">
+      אופציונלי אך מומלץ: מסנכרן את הפוזיציות שלך ל-repo, כך שהסריקה היומית תדע לשלוח
+      התראות Push על התקרבות ליעד/סטופ/דוחות — וגם תקבל גיבוי וסנכרון בין מכשירים.
+      צור Fine-grained token עם הרשאת Contents (Read&write) ל-repo הזה בלבד.
+    </div>
+    <div class="grid2">
+      <div class="field"><label>משתמש (owner)</label><input id="s_owner" value="${esc(gh.owner||'')}" dir="ltr"></div>
+      <div class="field"><label>שם repo</label><input id="s_repo" value="${esc(gh.repo||'')}" dir="ltr"></div>
+    </div>
+    <div class="field"><label>Token</label><input id="s_token" type="password" value="${esc(gh.token||'')}" dir="ltr" placeholder="github_pat_..."></div>
+    <div class="cardbtns">
+      <button class="btn" onclick="saveGh()">שמור</button>
+      <button class="btn primary" onclick="syncNow()">סנכרן עכשיו</button>
+    </div>
+    <div class="hint" id="syncStatus">${s.last_sync?('סנכרון אחרון: '+new Date(s.last_sync).toLocaleString('he-IL')):'לא סונכרן עדיין'}</div>
+  </div>
+  <div class="card">
+    <h3 style="font-size:14px;margin-bottom:10px">🗂 גיבוי מקומי</h3>
+    <div class="cardbtns">
+      <button class="btn" onclick="exportData()">ייצוא JSON</button>
+      <button class="btn" onclick="importData()">ייבוא JSON</button>
+    </div>
+  </div>
+  <div class="card">
+    <h3 style="font-size:14px;margin-bottom:10px">📐 האסטרטגיה</h3>
+    <div class="hint">
+      הסורק רץ כל יום מסחר לפני פתיחת וול סטריט על כל המניות האמריקאיות בשווי 2 מיליארד דולר ומעלה, ומאתר
+      <b>תעלה עולה</b> (רגרסיה לינארית, 45–110 ימי מסחר, R²≥0.55) שבה המחיר נמצא
+      <b>בשליש התחתון של התעלה</b> — פולבק בתוך מגמת עלייה: RSI≤47, מתחת ל-SMA20,
+      מעל SMA200, ורצפת התעלה לא נשברה.<br><br>
+      <b>יעד רווח</b>: ראש התעלה (או שיא 52ש׳ ישן אם הוא קרוב יותר).<br>
+      <b>סטופ</b>: ‏1.2×ATR — או 1.7×ATR במניות תנודתיות (ATR>5%), תמיד מתחת לרצפת התעלה.<br><br>
+      ⚠️ הכלי הזה הוא עוזר החלטה בלבד — לא ייעוץ השקעות.
+    </div>
+  </div>`;
+}
+window.saveTopic=function(){
+  state.settings.ntfy_topic=$('s_topic').value.trim();
+  saveState(); toast('נשמר');
+};
+window.testNtfy=async function(){
+  const topic=$('s_topic').value.trim()||state.settings.ntfy_topic;
+  try{
+    await fetch(NTFY_SERVER,{method:'POST',body:JSON.stringify({
+      topic, title:'סורק תעלות — בדיקה', message:'ההתראות עובדות! 🎯', tags:['white_check_mark']
+    })});
+    toast('נשלח! בדוק את אפליקציית ntfy');
+  }catch(e){ toast('שליחה נכשלה: '+e.message); }
+};
+window.saveGh=function(){
+  state.settings.gh={owner:$('s_owner').value.trim(),repo:$('s_repo').value.trim(),token:$('s_token').value.trim()};
+  saveState(); toast('נשמר');
+};
+
+/* ---------- github sync ---------- */
+let syncTimer=null;
+function scheduleSync(){ if(state.settings.gh?.token){clearTimeout(syncTimer);syncTimer=setTimeout(syncPush,1500);} }
+function ghHeaders(){
+  return {'Authorization':'Bearer '+state.settings.gh.token,
+          'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'};
+}
+function ghUrl(){
+  const g=state.settings.gh;
+  return `https://api.github.com/repos/${g.owner}/${g.repo}/contents/positions.json`;
+}
+async function syncPush(){
+  const g=state.settings.gh; if(!g?.token||!g.owner||!g.repo) return;
+  try{
+    let sha=null;
+    const cur=await fetch(ghUrl(),{headers:ghHeaders()});
+    if(cur.ok) sha=(await cur.json()).sha;
+    const body={message:'sync positions from app',
+      content:btoa(unescape(encodeURIComponent(JSON.stringify({updated:new Date().toISOString(),positions:state.positions},null,1))))};
+    if(sha) body.sha=sha;
+    const r=await fetch(ghUrl(),{method:'PUT',headers:ghHeaders(),body:JSON.stringify(body)});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    state.settings.last_sync=Date.now();
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
+    const el=$('syncStatus'); if(el) el.textContent='סנכרון אחרון: '+new Date().toLocaleString('he-IL');
+  }catch(e){ console.warn('sync push failed',e); }
+}
+async function syncPull(){
+  const g=state.settings.gh; if(!g?.token||!g.owner||!g.repo) return;
+  try{
+    const r=await fetch(ghUrl(),{headers:ghHeaders()});
+    if(!r.ok) return;
+    const j=await r.json();
+    const remote=JSON.parse(decodeURIComponent(escape(atob(j.content.replace(/\n/g,'')))));
+    // merge by id, newest `updated` wins
+    const map={};
+    for(const p of state.positions) map[p.id]=p;
+    for(const p of (remote.positions||[])){
+      if(!map[p.id] || (p.updated||0)>(map[p.id].updated||0)) map[p.id]=p;
+    }
+    state.positions=Object.values(map);
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
+    renderAll();
+  }catch(e){ console.warn('sync pull failed',e); }
+}
+window.syncNow=async function(){ window.saveGh(); await syncPull(); await syncPush(); toast('סונכרן ☁️'); };
+
+/* ---------- export/import ---------- */
+window.exportData=function(){
+  const blob=new Blob([JSON.stringify(state,null,1)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download='taalot-backup-'+todayISO()+'.json'; a.click();
+};
+window.importData=function(){
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='.json';
+  inp.onchange=async()=>{
+    try{
+      const j=JSON.parse(await inp.files[0].text());
+      if(j.positions){state=j;saveState();applyTheme();renderAll();toast('יובא בהצלחה');}
+      else toast('קובץ לא תקין');
+    }catch(e){toast('שגיאה בייבוא');}
+  };
+  inp.click();
+};
+
+/* ---------- modal & nav ---------- */
+function openModal(html){ $('modalBody').innerHTML=html; $('modalBg').classList.add('open'); }
+window.closeModal=function(){ $('modalBg').classList.remove('open'); };
+$('modalBg').addEventListener('click',e=>{ if(e.target===$('modalBg')) closeModal(); });
+
+document.querySelectorAll('nav button').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('nav button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    $('view-'+b.dataset.view).classList.add('active');
+    $('fabAdd').classList.toggle('show', b.dataset.view==='positions');
+    if(b.dataset.view==='signals' && picksData){
+      state.settings.seen_scan=picksData.scan_date;
+      localStorage.setItem(LS_KEY, JSON.stringify(state));
+      $('bdgSignals').style.display='none';
+    }
+    if(b.dataset.view==='stats') renderStats();
+    window.scrollTo({top:0});
+  };
+});
+
+function renderAll(){
+  renderSignals(); renderPositions(); renderHistory();
+  if($('view-stats').classList.contains('active')) renderStats();
+  renderSettings();
+}
+
+/* ---------- boot ---------- */
+if('serviceWorker' in navigator){
+  addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+loadPicks();
+syncPull();
+setInterval(()=>loadPicks(), 10*60*1000);
+</script>
+</body>
+</html>

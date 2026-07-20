@@ -1,0 +1,50 @@
+{
+ "generated_at": "2026-07-20T08:30:00+00:00",
+ "scan_date": "2026-07-20",
+ "universe_size": 1400,
+ "analyzed": 1400,
+ "picks": ["CW", "IBRX", "RBC"],
+ "new_picks": ["CW", "IBRX", "RBC"],
+ "candidates": [
+  {
+   "ticker": "CW", "name": "Curtiss-Wright Corp", "sector": "Industrials", "cap": 26360000000,
+   "price": 713.48, "rsi": 39.4, "atr_pct": 0.0377,
+   "sma20_dist": -0.0522, "sma50_dist": -0.0408, "sma200_dist": 0.0856, "hi52_dist": -0.1172,
+   "dollar_vol": 69640000,
+   "channel": {"lookback": 75, "r2": 0.72, "gain": 0.18, "width_pct": 0.11, "pos": 0.14},
+   "tp_price": 770.56, "tp_pct": 0.08, "sl_price": 692.08, "sl_pct": 0.03, "rr": 2.67,
+   "strict": true, "score": 74.2, "is_pick": true,
+   "earnings_date": "2026-08-05", "days_to_earnings": 16, "target_mean": 822.17,
+   "spark": null
+  },
+  {
+   "ticker": "RBC", "name": "RBC Bearings Inc", "sector": "Industrials", "cap": 17930000000,
+   "price": 566.79, "rsi": 34.7, "atr_pct": 0.0315,
+   "sma20_dist": -0.0694, "sma50_dist": -0.0533, "sma200_dist": 0.089, "hi52_dist": -0.1511,
+   "dollar_vol": 46980000,
+   "channel": {"lookback": 75, "r2": 0.70, "gain": 0.16, "width_pct": 0.12, "pos": 0.10},
+   "tp_price": 617.80, "tp_pct": 0.09, "sl_price": 546.95, "sl_pct": 0.035, "rr": 2.57,
+   "strict": true, "score": 78.9, "is_pick": true,
+   "earnings_date": "2026-07-31", "days_to_earnings": 11, "target_mean": 620.0,
+   "spark": null
+  },
+  {
+   "ticker": "IBRX", "name": "ImmunityBio Inc", "sector": "Healthcare", "cap": 7940000000,
+   "price": 7.58, "rsi": 43.8, "atr_pct": 0.0712,
+   "sma20_dist": -0.0794, "sma50_dist": -0.0308, "sma200_dist": 0.3296, "hi52_dist": -0.3902,
+   "dollar_vol": 28840000,
+   "channel": {"lookback": 60, "r2": 0.62, "gain": 0.22, "width_pct": 0.24, "pos": 0.18},
+   "tp_price": 8.57, "tp_pct": 0.13, "sl_price": 6.67, "sl_pct": 0.12, "rr": 1.08,
+   "strict": true, "score": 62.4, "is_pick": true,
+   "earnings_date": "2026-08-04", "days_to_earnings": 15, "target_mean": 13.0,
+   "spark": null
+  }
+ ],
+ "quotes": {
+  "CW": {"price": 713.48, "prev_close": 707.82},
+  "RBC": {"price": 566.79, "prev_close": 575.22},
+  "IBRX": {"price": 7.58, "prev_close": 7.68}
+ },
+ "earnings": {"CW": "2026-08-05", "RBC": "2026-07-31", "IBRX": "2026-08-04"},
+ "alerts": []
+}
