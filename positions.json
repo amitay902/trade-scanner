@@ -1,4 +1,20 @@
 {
- "updated": "2026-07-20T19:42:34.814Z",
- "positions": []
+ "updated": "2026-07-20T19:47:02.218Z",
+ "positions": [
+  {
+   "id": "mrtmynbsevt",
+   "ticker": "C",
+   "name": "Citigroup Inc. Common Stock",
+   "sector": "Finance",
+   "entry_date": "2026-07-20",
+   "entry_price": 129.07,
+   "qty": 9,
+   "tp_price": 151.75,
+   "sl_price": 124.38,
+   "earnings_date": "2026-10-13",
+   "notes": "",
+   "status": "open",
+   "updated": 1784576820376
+  }
+ ]
 }
